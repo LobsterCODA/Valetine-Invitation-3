@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valentine Invitation 💌</title>
+  <style>
+    * { box-sizing: border-box; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -50px;
+      font-size: 18px;
+      opacity: 0.55;
+      animation: floatUp linear forwards;
+      filter: blur(0.2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform, opacity;
+    }
+
+    .heart img {
+      width: 42px;
+      height: 42px;
+      pointer-events: none;
+      user-select: none;
+      object-fit: contain;
+      display: block;
+      opacity: 0;
+      transition: opacity 200ms ease;
+    }
+
+
+    @keyframes floatUp {
+      from { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+      10% { opacity: 0.55; }
+      to {
+        transform: translateY(-110vh) translateX(var(--drift, 0px)) scale(var(--scale, 1));
+        opacity: 0;
+      }
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 40px 30px;
+      border-radius: 22px;
+      text-align: center;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      animation: fadeIn 1.2s ease;
+      backdrop-filter: blur(6px);
+    }
+
+    h1 { color: #e63946; font-size: 2rem; margin: 0 0 10px; letter-spacing: 0.2px; }
+    p  { color: #555; font-size: 1.1rem; margin: 0 0 18px; }
+
+    .type { min-height: 48px; }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: #e63946;
+      color: white;
+      border: none;
+      padding: 14px 26px;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      user-select: none;
+    }
+
+    #noBtn { background: #f1a1a8; }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(230, 57, 70, 0.4);
+    }
+
+    input {
+      padding: 12px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      width: 90%;
+      font-size: 1rem;
+      text-align: center;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: rgba(230, 57, 70, 0.5);
+      box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.12);
+    }
+
+    .hidden { display: none; }
+
+    .small {
+      font-size: 0.9rem;
+      color: #777;
+      margin: 10px 0 0;
+    }
+
+    .scramble {
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      margin: 15px 0;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .confetti {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .confetti span {
+      position: absolute;
+      top: -20px;
+      font-size: 16px;
+      animation: confettiFall linear forwards;
+      opacity: 0.9;
+    }
+
+    @keyframes confettiFall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+
+    audio { display: none; }
+
+    .finalScreen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 154, 158, 0.96);
+      border-radius: 22px;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+      pointer-events: none;
+    }
+
+    .finalScreen.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" id="hearts"></div>
+  <div class="confetti" id="confetti"></div>
+
+  <audio id="bgMusic" loop preload="auto" autoplay muted>
+    <source src="music.mp3" type="audio/mpeg" />
+    Your browser doesn’t support audio.
+  </audio>
+
+  <div class="card" id="puzzleCard">
+    <h1>Word Scramble 💌</h1>
+    <p>Solve these riddles, these are words of things we love</p>
+    <p class="small">(You can type them in any order, separated by commas)</p>
+
+    <div id="scramble" class="scramble"></div>
+
+    <input id="puzzleInput" type="text" placeholder="Example: pwincess, amor, bells, horace, parkwood" />
+    <br><br>
+    <button onclick="checkPuzzle()">Check 💕</button>
+    <p id="puzzleHint" class="small hidden">These are all words we love 💖</p>
+  </div>
+
+  <div class="card hidden" id="mainCard">
+    <div id="mainContent" style="transition: opacity 1s ease;">
+      <h1>Carolina, ¿quieres ser mi Valentín?</h1>
+      <p class="type" id="typeText"></p>
+      <p class="small">You’re not allowed to say no 😌</p>
+
+      <div class="buttons">
+        <button id="yesBtn" onclick="showMessage()">Yes 💕</button>
+        <button id="noBtn">No 😢</button>
+      </div>
+
+      <p id="response" class="hidden">Then it’s official 💌<br>Happy Valentine’s Day, my love.</p>
+    </div>
+
+    <div id="finalScreen" class="finalScreen hidden">
+      <h1>Te amo mucho más ❤️</h1>
+    </div>
+  </div>
+
+  <script>
+    const herName = "Pwincess";
+
+    const puzzleWords = ["pwincess", "amor", "bells", "horace", "parkwood"];
+
+    const heartChars = ["❤", "💗", "💖", "💕", "💘"];
+
+    const stickerImages = [
+      "stickers/sticker1.png",
+      "stickers/sticker2.png",
+      "stickers/sticker3.png",
+      "stickers/sticker4.png",
+      "stickers/sticker5.png",
+      "stickers/sticker6.png"
+    ];
+
+    const typeTarget = document.getElementById("typeText");
+    const baseLine = `Even with the distance between us${herName ? `, ${herName}` : ""}, my heart is always with you ❤️`;
+    let typeIndex = 0;
+
+    function typeIt() {
+      if (!typeTarget) return;
+      typeTarget.textContent = baseLine.slice(0, typeIndex++);
+      if (typeIndex <= baseLine.length) setTimeout(typeIt, 22);
+    }
+
+    function shuffleWord(word) {
+      const arr = word.split("");
+      for (let j = arr.length - 1; j > 0; j--) {
+        const r = Math.floor(Math.random() * (j + 1));
+        const tmp = arr[j];
+        arr[j] = arr[r];
+        arr[r] = tmp;
+      }
+      return arr.join("");
+    }
+
+    const scrambleDiv = document.getElementById("scramble");
+    function renderScramble() {
+      if (!scrambleDiv) return;
+      scrambleDiv.innerHTML = puzzleWords
+        .map((w) => shuffleWord(w).toUpperCase())
+        .join(" &nbsp; • &nbsp; ");
+    }
+
+    function normalizeList(text) {
+      return (text || "")
+        .toLowerCase()
+        .split(",")
+        .map((w) => w.trim())
+        .filter(Boolean);
+    }
+
+    function checkPuzzle() {
+      const input = normalizeList(document.getElementById("puzzleInput")?.value);
+      const hint = document.getElementById("puzzleHint");
+      const allFound = puzzleWords.every((w) => input.includes(w));
+
+      if (allFound) {
+        const pc = document.getElementById("puzzleCard");
+        const mc = document.getElementById("mainCard");
+        if (pc) pc.classList.add("hidden");
+        if (mc) mc.classList.remove("hidden");
+        startHearts();
+        typeIt();
+      } else if (hint) {
+        hint.classList.remove("hidden");
+      }
+    }
+
+    const heartsWrap = document.getElementById("hearts");
+    let heartsTimer = null;
+
+    function spawnHeart() {
+      if (!heartsWrap) return;
+
+      const el = document.createElement("div");
+      el.className = "heart";
+
+      if (Math.random() < 0.3) {
+        const img = document.createElement("img");
+        const pick = stickerImages[Math.floor(Math.random() * stickerImages.length)];
+        img.src = pick + "?v=1";
+        img.alt = "";
+        img.decoding = "async";
+        img.loading = "eager";
+        img.onload = () => {
+          img.style.opacity = "1";
+        };
+        img.onerror = () => {
+          try { img.remove(); } catch (_) {}
+          el.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
+        };
+        el.appendChild(img);
+      } else {
+        el.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
+      }
+
+      el.style.left = Math.random() * 100 + "vw";
+      el.style.setProperty("--drift", (Math.random() * 120 - 60) + "px");
+      el.style.setProperty("--scale", (0.7 + Math.random() * 0.8).toFixed(2));
+      const dur = 6 + Math.random() * 6;
+      el.style.animationDuration = dur + "s";
+      heartsWrap.appendChild(el);
+      setTimeout(() => {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }, dur * 1000);
+    }
+
+    function startHearts() {
+      if (heartsTimer) return;
+      if (document.hidden) return;
+      heartsTimer = setInterval(spawnHeart, 450);
+    }
+
+    function stopHearts() {
+      if (!heartsTimer) return;
+      clearInterval(heartsTimer);
+      heartsTimer = null;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopHearts();
+      else startHearts();
+    });
+
+    const confetti = document.getElementById("confetti");
+    function burstConfetti() {
+      if (!confetti) return;
+      for (let k = 0; k < 26; k++) {
+        const s = document.createElement("span");
+        s.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
+        s.style.left = Math.random() * 100 + "vw";
+        s.style.animationDuration = (1.6 + Math.random() * 1.4) + "s";
+        s.style.transform = `translateY(0) rotate(${Math.random() * 180}deg)`;
+        confetti.appendChild(s);
+        setTimeout(() => {
+          if (s && s.parentNode) s.parentNode.removeChild(s);
+        }, 3200);
+      }
+    }
+
+    function fadeInAudio(audioEl, seconds = 2.5) {
+      if (!audioEl) return;
+      audioEl.volume = 0;
+      const steps = 25;
+      const stepMs = (seconds * 1000) / steps;
+      let v = 0;
+      const inc = 1 / steps;
+      const t = setInterval(() => {
+        v = Math.min(1, v + inc);
+        audioEl.volume = v;
+        if (v >= 1) clearInterval(t);
+      }, stepMs);
+    }
+
+    const music = document.getElementById("bgMusic");
+    let audioUnlocked = false;
+
+    function unlockAudio() {
+      if (!music || audioUnlocked) return;
+      audioUnlocked = true;
+      music.muted = false;
+      music.play().then(() => fadeInAudio(music, 2.5)).catch(() => {});
+    }
+
+    document.addEventListener("pointerdown", unlockAudio, { once: true });
+    document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
+    document.addEventListener("keydown", unlockAudio, { once: true });
+
+    function showMessage() {
+      const resp = document.getElementById("response");
+      if (resp) resp.classList.remove("hidden");
+      burstConfetti();
+      unlockAudio();
+
+      const final = document.getElementById("finalScreen");
+      const content = document.getElementById("mainContent");
+
+      setTimeout(() => {
+        if (content) content.style.opacity = "0";
+        setTimeout(() => {
+          if (final) {
+            final.classList.remove("hidden");
+            final.classList.add("show");
+          }
+        }, 800);
+      }, 1800);
+    }
+
+    const noBtn = document.getElementById("noBtn");
+    function dodge() {
+      if (!noBtn) return;
+      const x = Math.random() * 240 - 120;
+      const y = Math.random() * 220 - 110;
+      noBtn.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    if (noBtn) {
+      noBtn.addEventListener("mouseover", dodge);
+      noBtn.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          dodge();
+        },
+        { passive: false }
+      );
+    }
+
+    function runSelfTests() {
+      const results = [];
+      const assert = (name, condition) => results.push({ name, pass: !!condition });
+
+      assert("checkPuzzle is function", typeof checkPuzzle === "function");
+      assert("showMessage is function", typeof showMessage === "function");
+      assert("puzzleWords length is 5", Array.isArray(puzzleWords) && puzzleWords.length === 5);
+      assert("required elements exist", !!document.getElementById("puzzleCard") && !!document.getElementById("mainCard"));
+
+      const sample = "pwincess";
+      const shuffled = shuffleWord(sample);
+      const sort = (s) => s.split("").sort().join("");
+      assert("shuffle preserves letters", sort(sample) === sort(shuffled));
+
+      renderScramble();
+      assert("scramble rendered", (document.getElementById("scramble")?.textContent || "").trim().length > 0);
+
+      const parsed = normalizeList(" a, B ,c ");
+      assert("normalizeList trims", parsed[0] === "a" && parsed[1] === "b" && parsed[2] === "c");
+
+      try {
+        console.table(results);
+      } catch (_) {}
+
+      const failed = results.filter((r) => !r.pass);
+      if (failed.length) {
+        try { console.warn("Some self-tests failed:", failed.map((f) => f.name)); } catch (_) {}
+      } else {
+        try { console.log("All self-tests passed ✅"); } catch (_) {}
+      }
+    }
+
+    renderScramble();
+    runSelfTests();
+  </script>
+</body>
+</html>
