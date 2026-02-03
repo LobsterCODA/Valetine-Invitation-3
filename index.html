@@ -49,7 +49,6 @@
       transition: opacity 200ms ease;
     }
 
-
     @keyframes floatUp {
       from { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
       10% { opacity: 0.55; }
@@ -187,8 +186,9 @@
   <div class="hearts" id="hearts"></div>
   <div class="confetti" id="confetti"></div>
 
-  <audio id="bgMusic" loop preload="auto" autoplay muted>
-    <source src="music.mp3" type="audio/mpeg" />
+  <!-- Music file must be at repo root as: music.mp3 -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="music.mp3?v=1" type="audio/mpeg" />
     Your browser doesn’t support audio.
   </audio>
 
@@ -226,11 +226,10 @@
 
   <script>
     const herName = "Pwincess";
-
     const puzzleWords = ["pwincess", "amor", "bells", "horace", "parkwood"];
-
     const heartChars = ["❤", "💗", "💖", "💕", "💘"];
 
+    // Match your repo folder name exactly (capital S)
     const stickerImages = [
       "Stickers/sticker1.png",
       "Stickers/sticker2.png",
@@ -240,6 +239,49 @@
       "Stickers/sticker6.png"
     ];
 
+    // ---- Music: ONE clean start function (no competing systems) ----
+    const bgMusic = document.getElementById("bgMusic");
+    let musicStarted = false;
+
+    function fadeInAudio(audioEl, seconds = 2.5) {
+      if (!audioEl) return;
+      const steps = 25;
+      const stepMs = (seconds * 1000) / steps;
+      let v = 0;
+      audioEl.volume = 0;
+      const inc = 1 / steps;
+
+      const t = setInterval(() => {
+        v = Math.min(1, v + inc);
+        audioEl.volume = v;
+        if (v >= 1) clearInterval(t);
+      }, stepMs);
+    }
+
+    function startMusic() {
+      if (!bgMusic || musicStarted) return;
+
+      musicStarted = true;
+      bgMusic.muted = false;
+      bgMusic.volume = 0;
+
+      const p = bgMusic.play();
+      if (p && p.catch) {
+        p.then(() => fadeInAudio(bgMusic, 2.5)).catch(() => {
+          musicStarted = false; // allow retry if browser blocked it
+        });
+      } else {
+        // older browsers
+        fadeInAudio(bgMusic, 2.5);
+      }
+    }
+
+    // Start on first user interaction anywhere (light + reliable)
+    window.addEventListener("pointerdown", startMusic, { once: true, capture: true });
+    window.addEventListener("keydown", startMusic, { once: true, capture: true });
+    window.addEventListener("touchstart", startMusic, { once: true, capture: true });
+
+    // ---- Typewriter ----
     const typeTarget = document.getElementById("typeText");
     const baseLine = `Even with the distance between us${herName ? `, ${herName}` : ""}, my heart is always with you ❤️`;
     let typeIndex = 0;
@@ -250,6 +292,7 @@
       if (typeIndex <= baseLine.length) setTimeout(typeIt, 22);
     }
 
+    // ---- Scramble helpers ----
     function shuffleWord(word) {
       const arr = word.split("");
       for (let j = arr.length - 1; j > 0; j--) {
@@ -277,7 +320,11 @@
         .filter(Boolean);
     }
 
+    // ---- Puzzle ----
     function checkPuzzle() {
+      // Ensure music starts on button click too (backup gesture)
+      startMusic();
+
       const input = normalizeList(document.getElementById("puzzleInput")?.value);
       const hint = document.getElementById("puzzleHint");
       const allFound = puzzleWords.every((w) => input.includes(w));
@@ -294,6 +341,7 @@
       }
     }
 
+    // ---- Floating hearts/stickers ----
     const heartsWrap = document.getElementById("hearts");
     let heartsTimer = null;
 
@@ -303,6 +351,7 @@
       const el = document.createElement("div");
       el.className = "heart";
 
+      // Stickers appear sometimes (adjust probability if you want)
       if (Math.random() < 0.3) {
         const img = document.createElement("img");
         const pick = stickerImages[Math.floor(Math.random() * stickerImages.length)];
@@ -310,13 +359,13 @@
         img.alt = "";
         img.decoding = "async";
         img.loading = "eager";
-        img.onload = () => {
-          img.style.opacity = "1";
-        };
+
+        img.onload = () => { img.style.opacity = "1"; };
         img.onerror = () => {
           try { img.remove(); } catch (_) {}
           el.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
         };
+
         el.appendChild(img);
       } else {
         el.textContent = heartChars[Math.floor(Math.random() * heartChars.length)];
@@ -328,6 +377,7 @@
       const dur = 6 + Math.random() * 6;
       el.style.animationDuration = dur + "s";
       heartsWrap.appendChild(el);
+
       setTimeout(() => {
         if (el && el.parentNode) el.parentNode.removeChild(el);
       }, dur * 1000);
@@ -350,6 +400,7 @@
       else startHearts();
     });
 
+    // ---- Confetti ----
     const confetti = document.getElementById("confetti");
     function burstConfetti() {
       if (!confetti) return;
@@ -366,39 +417,14 @@
       }
     }
 
-    function fadeInAudio(audioEl, seconds = 2.5) {
-      if (!audioEl) return;
-      audioEl.volume = 0;
-      const steps = 25;
-      const stepMs = (seconds * 1000) / steps;
-      let v = 0;
-      const inc = 1 / steps;
-      const t = setInterval(() => {
-        v = Math.min(1, v + inc);
-        audioEl.volume = v;
-        if (v >= 1) clearInterval(t);
-      }, stepMs);
-    }
-
-    const music = document.getElementById("bgMusic");
-    let audioUnlocked = false;
-
-    function unlockAudio() {
-      if (!music || audioUnlocked) return;
-      audioUnlocked = true;
-      music.muted = false;
-      music.play().then(() => fadeInAudio(music, 2.5)).catch(() => {});
-    }
-
-    document.addEventListener("pointerdown", unlockAudio, { once: true });
-    document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
-    document.addEventListener("keydown", unlockAudio, { once: true });
-
+    // ---- Yes button flow ----
     function showMessage() {
+      // Ensure music starts on Yes click too (backup gesture)
+      startMusic();
+
       const resp = document.getElementById("response");
       if (resp) resp.classList.remove("hidden");
       burstConfetti();
-      unlockAudio();
 
       const final = document.getElementById("finalScreen");
       const content = document.getElementById("mainContent");
@@ -414,6 +440,7 @@
       }, 1800);
     }
 
+    // ---- Runaway No button ----
     const noBtn = document.getElementById("noBtn");
     function dodge() {
       if (!noBtn) return;
@@ -434,6 +461,7 @@
       );
     }
 
+    // ---- Self tests ----
     function runSelfTests() {
       const results = [];
       const assert = (name, condition) => results.push({ name, pass: !!condition });
@@ -454,38 +482,12 @@
       const parsed = normalizeList(" a, B ,c ");
       assert("normalizeList trims", parsed[0] === "a" && parsed[1] === "b" && parsed[2] === "c");
 
-      try {
-        console.table(results);
-      } catch (_) {}
-
-      const failed = results.filter((r) => !r.pass);
-      if (failed.length) {
-        try { console.warn("Some self-tests failed:", failed.map((f) => f.name)); } catch (_) {}
-      } else {
-        try { console.log("All self-tests passed ✅"); } catch (_) {}
-      }
+      try { console.table(results); } catch (_) {}
     }
 
     renderScramble();
     runSelfTests();
-    
-    (() => {
-  const music = document.getElementById("bgMusic");
-  if (!music) return;
-
-  function unmuteAndPlay() {
-    music.muted = false;
-    music.volume = 1;
-    const p = music.play();
-    if (p && p.catch) p.catch(() => {});
-  }
-
-  // First interaction anywhere on page
-  window.addEventListener("pointerdown", unmuteAndPlay, { once: true, capture: true });
-  window.addEventListener("touchstart", unmuteAndPlay, { once: true, capture: true });
-  window.addEventListener("keydown", unmuteAndPlay, { once: true, capture: true });
-})();
-
   </script>
 </body>
 </html>
+
