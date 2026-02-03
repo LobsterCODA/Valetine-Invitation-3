@@ -468,6 +468,24 @@
 
     renderScramble();
     runSelfTests();
+    
+    (() => {
+  const music = document.getElementById("bgMusic");
+  if (!music) return;
+
+  function unmuteAndPlay() {
+    music.muted = false;
+    music.volume = 1;
+    const p = music.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  // First interaction anywhere on page
+  window.addEventListener("pointerdown", unmuteAndPlay, { once: true, capture: true });
+  window.addEventListener("touchstart", unmuteAndPlay, { once: true, capture: true });
+  window.addEventListener("keydown", unmuteAndPlay, { once: true, capture: true });
+})();
+
   </script>
 </body>
 </html>
